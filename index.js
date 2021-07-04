@@ -24,7 +24,18 @@ async function findTasks(aDatabase, aPage = 1, aLimit = 10)
 		const db = client.db(aDatabase);
 		const taskCollection = db.collection('task');
 		const cursor = taskCollection
-			.find()
+			.aggregate(
+				[
+				  {
+					'$sort': {
+						'createdAt': -1
+					},
+				},
+				{
+					'$unset': ['_id']
+				}
+				]
+			)
 			.skip(aPage > 0 ? ((aPage - 1) * aLimit) : 0)
 			.limit(aLimit);
 
@@ -72,12 +83,13 @@ async function fetchStatuses(aDatabase)
 }
 
 app.get('/', async (aReq, aRes) => {
+
 	aRes.send('Hello world');
 });
 
 app.get('/api/tasks', async (aReq, aRes) => {
 	const { db, limit, page } = aReq.query;
-	const tasks = await findTasks(db, page, limit);
+	const tasks = await findTasks(db, Number(page), Number(limit));
 	
 	aRes.json(tasks);
 });
