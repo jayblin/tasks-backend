@@ -1,8 +1,11 @@
 const express = require('express');
+const cors = require('cors');
 const { MongoClient } = require('mongodb');
 
 const app = express()
 const port = 3000;
+
+app.use(cors());
 
 const uri = 'mongodb://localhost:27017';
 const client = new MongoClient(
@@ -40,6 +43,34 @@ async function findTasks(aDatabase, aPage = 1, aLimit = 10)
 	}
 }
 
+async function fetchStatuses(aDatabase)
+{
+	let statuses = [];
+
+	try {
+		const db = client.db(aDatabase);
+		const taskCollection = db.collection('task_status');
+		const cursor = taskCollection.aggregate([
+			{
+				'$unset': ['_id']
+			}
+		]);
+
+		statuses = await cursor.toArray();
+		return [];
+	}
+	catch (excp) {
+		console.log('>>>>>>>>>>>>>>>>>>');
+		console.error(excp)
+		console.log('<<<<<<<<<<<<<<<<<<');
+
+		statuses = [];
+	}
+	finally {
+		return statuses;
+	}
+}
+
 app.get('/', async (aReq, aRes) => {
 	aRes.send('Hello world');
 });
@@ -51,16 +82,11 @@ app.get('/api/tasks', async (aReq, aRes) => {
 	aRes.json(tasks);
 });
 
-/**
- * https://stackoverflow.com/a/18311469
- */
-app.use((aReq, aRes, aNext) => {
-	aRes.setHeader('Access-Control-Allow-Origin', '*');
-	aRes.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-	aRes.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-	aRes.setHeader('Access-Control-Allow-Credentials', true);
+app.get('/api/statuses', async (aReq, aRes) => {
+	const { db } = aReq.query;
+	const statuses = await fetchStatuses(db);
 
-	aNext();
+	return aRes.json(statuses);
 });
 
 app.listen(port, async () => { 
