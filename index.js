@@ -6,6 +6,7 @@ const app = express()
 const port = 3000;
 
 app.use(cors());
+app.use(express.json());
 
 const uri = 'mongodb://localhost:27017';
 const client = new MongoClient(
@@ -91,14 +92,69 @@ app.get('/api/tasks', async (aReq, aRes) => {
 	const { db, limit, page } = aReq.query;
 	const tasks = await findTasks(db, Number(page), Number(limit));
 	
-	aRes.json(tasks);
+	aRes.json({data: tasks});
+});
+
+app.patch('/api/tasks', async(aReq, aRes) => {
+	const { db } = aReq.query;
+	const task = aReq.body;
+
+	if (task.createdAt) {
+		task.createdAt = new Date(task.createdAt);
+	}
+
+	try {
+		const mongodb = client.db(db);
+		const taskCollection = mongodb.collection('task');
+		const filter = {
+			id: task.id,
+		};
+		const updateDocument = {
+			$set: {
+				...task
+			},
+		};
+		const options = {
+			// upsert: true,
+		};
+
+		const result = await taskCollection.updateOne(filter, updateDocument, options);
+
+		if (result.modifiedCount > 0) {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача обновлена",
+						type: "success"
+					},
+				],
+			});
+
+			return;
+		}
+		else {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача не обновлена",
+						type: "warning"
+					},
+				],
+			});
+			return;
+		}
+	}
+	catch (excp) {
+	}
+
+	aRes.json(task);
 });
 
 app.get('/api/statuses', async (aReq, aRes) => {
 	const { db } = aReq.query;
 	const statuses = await fetchStatuses(db);
 
-	return aRes.json(statuses);
+	return aRes.json({data: statuses});
 });
 
 app.listen(port, async () => { 
