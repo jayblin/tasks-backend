@@ -257,9 +257,38 @@ app.delete('/api/tasks', async (aReq, aRes) => {
 	aRes.json([]);
 });
 
+function insertDefaultStatuses(aDBName)
+{
+	const mongodb = client.db(aDBName);
+	const statusCollection = mongodb.collection('status');
+
+	const defaultStatuses = [
+		{
+			id: 0,
+			title: 'Запланировано',
+		},
+		{
+			id: 1,
+			title: 'WIP',
+		},
+		{
+			id: 2,
+			title: 'Готово',
+		},
+	];
+
+	statusCollection.insertMany(defaultStatuses);
+
+	return defaultStatuses;
+}
+
 app.get('/api/statuses', async (aReq, aRes) => {
 	const { db } = aReq.query;
-	const statuses = await fetchStatuses(db);
+	let statuses = await fetchStatuses(db);
+
+	if (statuses.length === 0) {
+		statuses = insertDefaultStatuses(db);
+	}
 
 	return aRes.json({data: statuses});
 });
