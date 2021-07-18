@@ -211,6 +211,52 @@ app.post('/api/tasks', async (aReq, aRes) => {
 	aRes.json(task);
 });
 
+app.delete('/api/tasks', async (aReq, aRes) => {
+	const { db, task_id } = aReq.query;
+
+	try {
+		const mongodb = client.db(db);
+		const taskCollection = mongodb.collection('task');
+
+		const query = {
+			id: {
+				$eq: Number(task_id),
+			}
+		};
+
+		const result = await taskCollection.deleteOne(query);
+
+		if (result.deletedCount === 1) {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача удалена",
+						type: "success"
+					},
+				],
+			});
+
+			return;
+		}
+		else {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача не удалена",
+						type: "warning"
+					},
+				],
+			});
+			return;
+		}
+	}
+	catch (excp) {
+		console.log(excp);
+	}
+
+	aRes.json([]);
+});
+
 app.get('/api/statuses', async (aReq, aRes) => {
 	const { db } = aReq.query;
 	const statuses = await fetchStatuses(db);
