@@ -41,7 +41,6 @@ async function findTasks(aDatabase, aPage = 1, aLimit = 10)
 			.limit(aLimit);
 
 		tasks = await cursor.toArray();
-		return [];
 	}
 	catch (excp) {
 		console.log('>>>>>>>>>>>>>>>>>>');
@@ -145,6 +144,68 @@ app.patch('/api/tasks', async(aReq, aRes) => {
 		}
 	}
 	catch (excp) {
+	}
+
+	aRes.json(task);
+});
+
+app.post('/api/tasks', async (aReq, aRes) => {
+	const { db } = aReq.query;
+	const task = aReq.body;
+
+	if (task.createdAt) {
+		task.createdAt = new Date(task.createdAt);
+	}
+	else {
+		task.createdAt = new Date();
+	}
+
+	try {
+		const mongodb = client.db(db);
+		const taskCollection = mongodb.collection('task');
+
+		let lastTaskInCollection = await taskCollection.find().sort({id: -1}).limit(1).toArray();
+
+		if (lastTaskInCollection.length !== 1) {
+			throw new Error();
+		}
+
+		lastTaskInCollection = lastTaskInCollection[0];
+
+		task.id = lastTaskInCollection.id + 1;
+		/**
+		 * @todo: Подумать как выставлять статсы.
+		*/
+		task.status = 0;
+
+		const result = await taskCollection.insertOne(task);
+
+		if (result.insertedCount === 1) {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача создана",
+						type: "success"
+					},
+				],
+			});
+
+			return;
+		}
+		else {
+			aRes.json({
+				notifications: [
+					{
+						text: "Задача не создана",
+						type: "warning"
+					},
+				],
+			});
+			return;
+		}
+	}
+	catch (excp) {
+		console.log(excp);
 	}
 
 	aRes.json(task);
