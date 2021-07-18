@@ -7,6 +7,7 @@ const port = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('../frontend/dist'));
 
 const uri = 'mongodb://localhost:27017';
 const client = new MongoClient(
@@ -82,10 +83,10 @@ async function fetchStatuses(aDatabase)
 	}
 }
 
-app.get('/', async (aReq, aRes) => {
+// app.get('/', async (aReq, aRes) => {
 
-	aRes.send('Hello world');
-});
+// 	aRes.send('Hello world');
+// });
 
 app.get('/api/tasks', async (aReq, aRes) => {
 	const { db, limit, page } = aReq.query;
