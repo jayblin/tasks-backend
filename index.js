@@ -166,11 +166,15 @@ app.post('/api/tasks', async (aReq, aRes) => {
 
 		let lastTaskInCollection = await taskCollection.find().sort({id: -1}).limit(1).toArray();
 
-		if (lastTaskInCollection.length !== 1) {
-			throw new Error();
+		/** @todo: Подумать как более эффективно определять id для новой задачи */
+		if (lastTaskInCollection.length === 1)
+		{
+			lastTaskInCollection = lastTaskInCollection[0];
 		}
-
-		lastTaskInCollection = lastTaskInCollection[0];
+		else 
+		{
+			lastTaskInCollection = { id: 0 };
+		}
 
 		task.id = lastTaskInCollection.id + 1;
 		/**
@@ -260,7 +264,7 @@ app.delete('/api/tasks', async (aReq, aRes) => {
 function insertDefaultStatuses(aDBName)
 {
 	const mongodb = client.db(aDBName);
-	const statusCollection = mongodb.collection('status');
+	const statusCollection = mongodb.collection('task_status');
 
 	const defaultStatuses = [
 		{
