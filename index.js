@@ -103,6 +103,8 @@ app.patch('/api/tasks', async(aReq, aRes) => {
 		task.createdAt = new Date(task.createdAt);
 	}
 
+	task.updatedAt = new Date();
+
 	try {
 		const mongodb = client.db(db);
 		const taskCollection = mongodb.collection('task');
