@@ -83,6 +83,91 @@ async function fetchStatuses(aDatabase)
 	}
 }
 
+
+async function fetchLastId(aDBName, aCollectionName)
+{
+	let result = {
+		lastID: -1,
+	};
+	try {
+		const db = client.db(aDBName);
+		const collection = db.collection(aCollectionName + '_id_counter');
+		
+		let aggregate = await collection.aggregate([]);
+		const elements = await aggregate.toArray();
+
+		if (elements.length === 0 || elements[0].lastID === null)
+		{
+			const originCollection = db.collection(aCollectionName);
+			let lastInOriginCollection = await originCollection
+				.find()
+				.sort({id: -1})
+				.limit(1)
+				.toArray();
+
+			if (lastInOriginCollection.length === 1)
+			{
+				lastInOriginCollection = lastInOriginCollection[0];
+			}
+			else
+			{
+				lastInOriginColelction = { id: -1 };
+			}
+
+			result.lastID = lastInOriginCollection.id;
+
+			collection.insertOne(result);
+		}
+		else
+		{
+			result = elements[0];
+		}
+	}
+	catch (excp) {
+		console.log('>>>>>>>>>>>>>>>>>>');
+		console.error(excp)
+		console.log('<<<<<<<<<<<<<<<<<<');
+	}
+	finally {
+		
+
+		return result.lastID;
+	}
+}
+
+async function incrementLastID(aDBName, aCollectionName)
+{
+	try {
+		const db = client.db(aDBName);
+		const collection = db.collection(aCollectionName + '_id_counter');
+		
+		let aggregate = await collection.aggregate([]);
+		const elements = await aggregate.toArray();
+
+		if (elements[0])
+		{
+			const element = elements[0];
+			const filter = {
+				_id: element._id,
+			};
+			const updateDoc = {
+				$set: {
+					lastID: element.lastID++,
+				},
+			};
+			const options = {};
+			collection.updateOne(filter, updateDoc, options);
+		}
+	}
+	catch (excp) {
+		console.log('>>>>>>>>>>>>>>>>>>');
+		console.error(excp)
+		console.log('<<<<<<<<<<<<<<<<<<');
+	}
+	finally {
+	}
+}
+
 // app.get('/', async (aReq, aRes) => {
 
 // 	aRes.send('Hello world');
@@ -167,19 +252,7 @@ app.post('/api/tasks', async (aReq, aRes) => {
 		const mongodb = client.db(db);
 		const taskCollection = mongodb.collection('task');
 
-		let lastTaskInCollection = await taskCollection.find().sort({id: -1}).limit(1).toArray();
-
-		/** @todo: Подумать как более эффективно определять id для новой задачи */
-		if (lastTaskInCollection.length === 1)
-		{
-			lastTaskInCollection = lastTaskInCollection[0];
-		}
-		else 
-		{
-			lastTaskInCollection = { id: 0 };
-		}
-
-		task.id = lastTaskInCollection.id + 1;
+		task.id = await fetchLastId(db, 'task') + 1;
 		/**
 		 * @todo: Подумать как выставлять статсы.
 		*/
@@ -188,6 +261,9 @@ app.post('/api/tasks', async (aReq, aRes) => {
 		const result = await taskCollection.insertOne(task);
 
 		if (result.insertedCount === 1) {
+
+			await incrementLastID(db, 'task');
+
 			aRes.json({
 				notifications: [
 					{
