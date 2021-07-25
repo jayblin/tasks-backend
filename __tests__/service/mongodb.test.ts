@@ -27,6 +27,25 @@ describe('Instance of MongoDB class', () => {
 		await client.close();
 		expect(client.isConnected()).toBe(false);
 	});
+
+	it('should execute mongo operations', async () => {
+		const callback = jest.fn(async () => {});
+
+		await mongo.Execute(callback);
+
+		expect(callback).toBeCalled();
+	});
+
+	it('should return value after execution', async () => {
+		const callback = jest.fn(
+			 async () => ({status: "ok"})
+		);
+
+		const result = await mongo.Execute(callback);
+
+		expect(result === null).toBeFalsy();
+		expect(result?.status).toBe("ok");
+	})
 });
 
 

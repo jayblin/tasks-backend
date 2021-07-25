@@ -25,6 +25,26 @@ export class MongoDB
 
 		return this._client;
 	}
+
+	public async Execute<T>(
+		aCallback: () => Promise<T> | T
+	): Promise<T | null>
+	{
+		let result: T | null = null;
+		try
+		{
+			result = await aCallback();
+		}
+		catch (excp)
+		{
+			console.log('[MongoDB Error]');
+			console.log(excp);
+		}
+		finally
+		{
+			return result;
+		}
+	}
 }
 
 const inst = new MongoDB();
