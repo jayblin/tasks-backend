@@ -30,6 +30,14 @@
     "ts-node": "^10.1.0",
     "typescript": "^4.3.5"
   },
+  "nodemonConfig": {
+	  "events": {
+		"restart": "tsc --build"
+	  },
+	  "watch": [
+		  "src/"
+	  ]
+  },
   "_moduleAliases": {
 	"@": "./dist"
   }
