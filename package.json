@@ -32,7 +32,6 @@
   },
   "nodemonConfig": {
 	  "events": {
-		"restart": "tsc --build"
 	  },
 	  "watch": [
 		  "src/"
